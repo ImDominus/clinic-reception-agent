@@ -3,14 +3,15 @@
 전화·웹으로 들어온 환자 문의를 받아 **예약을 잡아주는 AI 접수 담당**입니다.
 의원(1차 의료기관) 프런트 데스크의 전화 응대를 대체하는 것이 목표입니다.
 
-> **현재 상태: M0 — 골격과 테스트만.**
-> 설정·헬스체크·도메인 타입·툴 명세는 돌아갑니다. **예약 로직은 비어 있습니다.**
-> 테스트 47개 중 34개가 의도적으로 빨간불이고, 그걸 켜는 것이 M1 입니다.
+> **현재 상태: M1 진행 중 — 슬롯 실체화 완료.**
+> 근무표에서 슬롯을 만드는 부분은 구현했고 테스트 11개가 초록불입니다.
+> **예약 코어와 초진/재진 판정은 아직 비어 있습니다.**
+> 테스트 47개 중 23개가 아직 빨간불이고, 그걸 켜는 것이 남은 M1 입니다.
 > → [docs/roadmap.md](docs/roadmap.md)
 
 ```
 $ make test
-34 failed, 10 passed, 3 skipped
+23 failed, 21 passed, 3 skipped
 ```
 
 빨간불은 전부 `NotImplementedError("M1")` 입니다. 테스트 본문은 최종 형태로 써뒀습니다.
@@ -60,7 +61,7 @@ $ make test
 | `app/agent/tools.py` 툴 명세 4종 | 완성 (핸들러 없음, 테스트 6개 통과) |
 | `app/vendors/base.py` STT/TTS/LLM 어댑터 | 인터페이스만 |
 | `schema/001_init.sql` | 완성. `make db` 로 바로 적용됩니다 |
-| **`app/domain/slots.py` 슬롯 실체화** | **비어 있음 — 테스트 11개 대기** |
+| `app/domain/slots.py` 슬롯 실체화 | 완성. 테스트 11개 통과 |
 | **`app/domain/scheduling.py` 예약 코어** | **비어 있음 — 테스트 17개 대기** |
 | **`app/domain/patients.py` 초진/재진 판정** | **비어 있음 — 테스트 6개 대기** |
 | 음성 파이프라인 (LiveKit, STT/TTS 구현) | 없음 — M3 |
@@ -71,7 +72,7 @@ $ make test
 ```bash
 python -m venv .venv
 .venv/Scripts/pip install -e ".[dev]"
-make test          # 빨간불 34개가 정상입니다
+make test          # 빨간불 23개가 정상입니다
 make db            # 개발용 Postgres + schema/001_init.sql 자동 적용
 make run           # uvicorn, GET /health
 ```
@@ -100,7 +101,7 @@ app/
   vendors/base.py      STT / TTS / LLM 어댑터 프로토콜
 seeds/synthetic.py     합성 시드 데이터
 schema/001_init.sql    초기 DDL
-tests/                 47개. 34개가 M1 대기
+tests/                 47개. 23개가 M1 대기
 ```
 
 ## 문서
