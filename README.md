@@ -3,19 +3,22 @@
 전화·웹으로 들어온 환자 문의를 받아 **예약을 잡아주는 AI 접수 담당**입니다.
 의원(1차 의료기관) 프런트 데스크의 전화 응대를 대체하는 것이 목표입니다.
 
-> **현재 상태: M1 진행 중 — 슬롯 실체화 완료.**
-> 근무표에서 슬롯을 만드는 부분은 구현했고 테스트 11개가 초록불입니다.
-> **예약 코어와 초진/재진 판정은 아직 비어 있습니다.**
-> 테스트 47개 중 23개가 아직 빨간불이고, 그걸 켜는 것이 남은 M1 입니다.
-> → [docs/roadmap.md](docs/roadmap.md)
+> 🇬🇧 [English README](README.en.md) — 코드 주석·docstring·커밋 메시지는 한국어입니다.
+
+> **현재 상태: M1 완료.** 예약 코어와 초진/재진 판정이 구현됐습니다.
+> DB 없이 도는 테스트 44개가 전부 초록불이고, 동시성 테스트 3개는 실제
+> Postgres 를 기다리며 건너뜁니다.
+> → 다음은 M2(레포지토리 구현 + 텍스트 채널) [docs/roadmap.md](docs/roadmap.md)
 
 ```
 $ make test
-23 failed, 21 passed, 3 skipped
+44 passed, 3 skipped
 ```
 
-빨간불은 전부 `NotImplementedError("M1")` 입니다. 테스트 본문은 최종 형태로 써뒀습니다.
-**무엇을 만들지가 테스트에 적혀 있고, 어떻게 만들지는 비어 있는 상태**입니다.
+M1 의 방식은 **테스트를 먼저 최종 형태로 쓰고 나중에 켜는** 것이었습니다.
+무엇을 만들지가 `tests/` 에 적혀 있었고, 구현은 그 23개를 켜는 작업이었습니다.
+남은 빨간불은 없고, 건너뛴 3개는 실제 DB 가 없으면 "통과"라고 말할 수 없는
+것들입니다(유니크 제약, 동시 예약).
 
 ---
 
@@ -61,18 +64,32 @@ $ make test
 | `app/agent/tools.py` 툴 명세 4종 | 완성 (핸들러 없음, 테스트 6개 통과) |
 | `app/vendors/base.py` STT/TTS/LLM 어댑터 | 인터페이스만 |
 | `schema/001_init.sql` | 완성. `make db` 로 바로 적용됩니다 |
-| `app/domain/slots.py` 슬롯 실체화 | 완성. 테스트 11개 통과 |
-| **`app/domain/scheduling.py` 예약 코어** | **비어 있음 — 테스트 17개 대기** |
-| **`app/domain/patients.py` 초진/재진 판정** | **비어 있음 — 테스트 6개 대기** |
+| `app/domain/slots.py` 슬롯 실체화 | 완성. 테스트 12개 통과 |
+| **`app/domain/scheduling.py` 예약 코어** | **완성. 테스트 17개 통과** |
+| **`app/domain/patients.py` 초진/재진 판정** | **완성. 테스트 6개 통과** |
+| `tests/fakes.py` 인메모리 레포지토리 | 완성. ports.py 의 메모리 구현 |
+| 레포지토리 실구현 (`app/infra`) | **없음 — M2.** 지금은 메모리 더블만 있습니다 |
 | 음성 파이프라인 (LiveKit, STT/TTS 구현) | 없음 — M3 |
 | 관리자 화면 | 없음 — M6 |
+
+### M1 에서 결정된 것 두 가지
+
+**검사 순서가 계약의 일부입니다.** `book()` 과 `reschedule()` 은 멱등키를
+조회하기 **전에** 슬롯을 검증합니다. 멱등은 "같은 요청을 두 번 처리하지
+않는다"는 뜻이고 "틀린 요청을 통과시킨다"는 뜻이 아니라서, 재시도여도 없는
+슬롯이나 지난 슬롯은 그대로 거절됩니다.
+
+**`reschedule()` 은 claim 먼저, release 나중입니다.** 새 슬롯 점유가
+`SlotTaken` 으로 죽으면 release 에 도달하지 못하고, 그래서 환자의 원래 예약이
+남습니다. 반대로 쓰면 실패한 변경이 예약을 지웁니다.
+`test_a_failed_reschedule_keeps_the_original_appointment` 가 이걸 못 박습니다.
 
 ## 돌려보기
 
 ```bash
 python -m venv .venv
 .venv/Scripts/pip install -e ".[dev]"
-make test          # 빨간불 23개가 정상입니다
+make test          # 44 passed, 3 skipped
 make db            # 개발용 Postgres + schema/001_init.sql 자동 적용
 make run           # uvicorn, GET /health
 ```
@@ -101,7 +118,10 @@ app/
   vendors/base.py      STT / TTS / LLM 어댑터 프로토콜
 seeds/synthetic.py     합성 시드 데이터
 schema/001_init.sql    초기 DDL
-tests/                 47개. 23개가 M1 대기
+tests/
+  fakes.py             인메모리 레포지토리 (ports.py 의 메모리 구현)
+  conftest.py          시나리오 시드 하나, 테스트마다 새로 세움
+  …                    47개 (44 통과 / 3 건너뜀)
 ```
 
 ## 문서
