@@ -12,7 +12,7 @@ import pytest
 from app.domain.errors import DomainError, SlotInPast, SlotNotFound, SlotTaken
 from app.domain.models import AppointmentStatus, VisitType
 from app.domain.scheduling import MAX_SUGGESTIONS, book, cancel, find_slots, reschedule
-from tests.conftest import CLINIC, DEPT_PEDS, PATIENT, SLOT_A, SLOT_B, run, uid
+from tests.conftest import CLINIC, DEPT_PEDS, PATIENT, SLOT_A, SLOT_B, SLOT_C, run, uid
 
 KEY = "call-0001:book"
 
@@ -196,6 +196,10 @@ def test_a_failed_reschedule_keeps_the_original_appointment(slots, appointments,
     """먼저 취소하고 다음에 잡는 순서는 금지입니다.
 
     중간에 실패하면 환자는 예약을 잃습니다. 한 트랜잭션이어야 합니다.
+
+    목적지는 SLOT_C 입니다 — 시드에서 이미 예약이 붙어 있는 슬롯이라 점유가
+    반드시 실패합니다. SLOT_B 는 비어 있어서(변경 성공 테스트의 목적지)
+    여기 쓰면 실패 경로를 타지 않습니다.
     """
     with pytest.raises(SlotTaken):
         run(
@@ -203,7 +207,7 @@ def test_a_failed_reschedule_keeps_the_original_appointment(slots, appointments,
                 slots,
                 appointments,
                 appointment_id=uid(50),
-                new_slot_id=SLOT_B,
+                new_slot_id=SLOT_C,
                 idempotency_key="call-0004:move",
                 now=now,
             )

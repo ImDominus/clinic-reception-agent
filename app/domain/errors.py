@@ -39,5 +39,14 @@ class PatientNotIdentified(DomainError):
     """전화번호와 생년월일이 모두 있어야 사람을 특정합니다."""
 
 
+class NotCancellable(DomainError):
+    """이미 진료가 끝났거나 노쇼 처리된 예약. 취소 대상이 아닙니다.
+
+    AlreadyCancelled 와 다릅니다. 이미 취소된 예약을 또 취소하는 것은 멱등하게
+    허용하지만(통화는 끊기고 재시도는 일어납니다), 끝난 진료는 전화로 되돌릴
+    수 없어서 상담원에게 넘깁니다.
+    """
+
+
 class OutOfScope(DomainError):
     """접수·예약 범위 밖. 즉시 상담원 연결 대상입니다."""
